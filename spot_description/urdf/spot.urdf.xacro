@@ -44,6 +44,7 @@
 
     <!-- Optional custom includes. -->
     <xacro:include filename="$(optenv SPOT_URDF_EXTRAS empty.urdf)" />
+    <xacro:include filename="$(find spot_description)/urdf/accessories.urdf.xacro" />
     <xacro:include filename="$(find spot_description)/urdf/spot_leg.urdf.xacro" />
     <xacro:spot_leg leg_name="front_left"/>
     <xacro:spot_leg leg_name="front_right"/>
