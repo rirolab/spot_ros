@@ -1,0 +1,14 @@
+# External Packages
+champ
+champ_teleop
+yocs_velocity_smoother
+
+build/*.txt
+build/Makefile
+build/*.cmake
+build/CMakeFiles
+build/sdk_core
+build/sample
+
+#whitelist
+!build/notes.txt

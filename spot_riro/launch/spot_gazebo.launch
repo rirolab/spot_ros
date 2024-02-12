@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="spot_robot_name" default="spot"/>
+    <arg name="spot_description_file" default="$(find spot_description)/urdf/riro_spot.urdf.xacro"/> 
+    <arg name="spot_world_init_x" default="1.5"/>
+    <arg name="spot_world_init_y" default="-1.5"/>
+    <arg name="spot_world_init_z" default="0.6"/>
+    <arg name="spot_world_init_a" default="0.0"/>
+    <!-- <arg name="spot_map_file" default="$(find spot_navigation)/maps/2d_map_test/mymap.yaml"/> -->
+    <arg name="spot_map_file" default="$(find riro_bringup)/maps/2d_map_test/exproom_test.yaml"/>
+    <arg name="spot_map_frame" default="2d_map"/>
+    <arg name="spot_map_topic" default="projected_map"/>
+    <arg name="spot_amcl_init_x" default="0"/>
+    <arg name="spot_amcl_init_y" default="0"/>
+    <arg name="spot_amcl_init_a" default="0"/>
+
+    <!-- Run Spot fixer in Gazebo --> 
+    <group ns="$(arg spot_robot_name)">
+        <node pkg="riro_bringup" name="spot_locater" type="spot_locater.py" output="screen" required="false"
+            args="$(arg spot_world_init_x) $(arg spot_world_init_y) $(arg spot_world_init_z) $(arg spot_world_init_a)">
+        </node>
+        <node name="map_server" pkg="map_server" type="map_server" args="$(arg spot_map_file)">
+            <param name="frame_id" value="$(arg spot_robot_name)/$(arg spot_map_frame)"/>  
+            <remap from="map" to="$(arg spot_map_topic)"/>
+        </node>
+
+        <include file="$(find spot_navigation)/launch/include/move_base.launch">
+            <arg name="dynamic_obj_removal" value="false" /> <!-- changed value="$(arg dynamic_obj_removal)" to value="true"-->
+            <arg name="z_axis_min" value="-0.3" />
+            <arg name="z_axis_max" value="0.7" />
+            <arg name="robot_name" value="$(arg spot_robot_name)" />
+            <arg name="frame_prefix" value="$(arg spot_robot_name)/" />
+            <arg name="topic_ns" value="$(arg spot_robot_name)/" />
+            <arg name="map_frame" value="$(arg spot_map_frame)"/>
+        </include>
+    </group>
+
+    <!-- Spawn Spot --> 
+    <include file="$(find spot_config)/launch/gazebo_collab.launch">
+        <arg name="robot_name" value="$(arg spot_robot_name)"/>
+        <arg name="base_frame" value="body"/> 
+        <arg name="world_init_x" value="$(arg spot_world_init_x)"/>
+        <arg name="world_init_y" value="$(arg spot_world_init_y)"/>
+        <arg name="world_init_z" value="$(arg spot_world_init_z)"/>
+        <arg name="world_init_heading" value="$(arg spot_world_init_a)"/>
+        <arg name="description_file" value="$(arg spot_description_file)"/>
+    </include>
+
+    <!-- Run SLAM -->
+    <!-- <include file="$(find spot_navigation)/launch/slam_fastlio_spot.launch">
+        <arg name="robot_name" value="$(arg spot_robot_name)"/>
+        <arg name="map_file" value="$(arg spot_map_file)"/>
+        <arg name="map_frame" value="$(arg spot_map_frame)"/>
+        <arg name="map_topic" value="$(arg spot_map_topic)"/>
+        <arg name="amcl_x_init_pose" value="$(arg spot_amcl_init_x)"/>
+        <arg name="amcl_y_init_pose" value="$(arg spot_amcl_init_y)"/>
+        <arg name="amcl_a_init_pose" value="$(arg spot_amcl_init_a)"/>
+    </include> -->
+
+</launch>

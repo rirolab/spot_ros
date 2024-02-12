@@ -1,0 +1,124 @@
+<launch>
+  <arg name="rviz"  default="false"/>
+  <arg name="sim" default="true" />
+  <arg name="dynamic_obj_removal" default="false" />   <!-- changed default='false' to default='true'-->
+  <arg name="z_axis_min" default="-0.3" />
+  <arg name="z_axis_max" default="0.7" /> 
+  <arg name="robot_name" default="spot" />
+  <arg name="frame_prefix" default="$(arg robot_name)/" />
+  <arg name="topic_ns" default="$(arg robot_name)/" />
+
+  <arg name="map_file" default="$(find spot_navigation)/maps/mymap.yaml"/>
+  <arg name="map_frame" default="2d_map"/>
+  <arg name="map_topic" default="projected_map"/>
+
+  <arg name="amcl_x_init_pose" default="0"/>
+  <arg name="amcl_y_init_pose" default="0"/>
+  <arg name="amcl_z_init_pose" default="0"/>
+  <arg name="amcl_a_init_pose" default="0"/>
+
+  <arg name="make_map" default="false" />
+
+  <group if="$(arg sim)" ns="$(arg robot_name)">
+    <!-- Ouster to laserscan -->
+    <include file="$(find champ_navigation)/launch/slam/ouster_pointcloud_to_laser.launch">
+        <arg name="cloud_in" value="ouster/points"/>
+        <arg name="frame_prefix" value="$(arg frame_prefix)" />
+    </include>
+
+    <!-- Fastlio SLAM -->
+    <include file="$(find spot_navigation)/launch/include/fastlio_ouster64.launch">
+      <arg name="robot_name" value="$(arg robot_name)" /> 
+      <arg name="frame_prefix" value="$(arg frame_prefix)" />
+    </include>
+
+    <!-- Make map -->
+    <group if="$(arg make_map)">
+      <!-- GMapping -->
+      <include file="$(find spot_navigation)/launch/include/gmapping.launch">
+        <arg name="odom_frame" value="$(arg frame_prefix)odom"/>
+        <arg name="base_frame" value="$(arg frame_prefix)base_link"/>
+        <arg name="map_frame" value="$(arg frame_prefix)$(arg map_frame)"/>
+        <arg name="map_topic" value="$(arg map_topic)"/>
+        <arg name="scan_topic" value="scan" />
+      </include>
+      <node pkg="tf" type="static_transform_publisher" name="spot_gmapping_fixer" 
+        args="0 0 0 0 0 0 1 $(arg frame_prefix)$(arg frame_prefix)$(arg map_frame) $(arg frame_prefix)$(arg map_frame) 100" /> <!-- ???? Wierd gmapping namespace bug fixer -->
+    </group>
+
+    <!-- Localization only -->
+    <group unless="$(arg make_map)">
+      <!-- spot amcl -->   
+      <include file="$(find roas_navigation)/launch/amcl.launch">
+        <arg name="global_frame" value="$(arg frame_prefix)$(arg map_frame)"/>
+        <arg name="odom_frame" value="$(arg frame_prefix)odom"/>
+        <arg name="base_frame" value="$(arg frame_prefix)base_link"/>
+        <arg name="scan_topic" value="scan"/>
+        <arg name="map_topic" value="$(arg map_topic)"/>
+        <arg name="x_init_pose" value="$(arg amcl_x_init_pose)"/>
+        <arg name="y_init_pose" value="$(arg amcl_y_init_pose)"/>
+        <arg name="z_init_pose" value="$(arg amcl_z_init_pose)"/>
+        <arg name="a_init_pose" value="$(arg amcl_a_init_pose)"/>
+        <param name="use_map_topic" value="true"/>
+      </include>
+      <!-- spot map_server -->
+      <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)">
+        <param name="frame_id" value="$(arg frame_prefix)$(arg map_frame)"/>  
+        <remap from="map" to="$(arg map_topic)"/>
+      </node>
+    </group>
+
+    <!-- Move-base & Others -->
+    <include file="$(find spot_navigation)/launch/include/move_base.launch">
+      <arg name="dynamic_obj_removal" value="$(arg dynamic_obj_removal)" /> <!-- changed value="$(arg dynamic_obj_removal)" to value="true"-->
+      <arg name="z_axis_min" value="$(arg z_axis_min)" />
+      <arg name="z_axis_max" value="$(arg z_axis_max)" />
+      <arg name="robot_name" value="$(arg robot_name)" />
+      <arg name="frame_prefix" value="$(arg frame_prefix)" />
+      <arg name="topic_ns" value="$(arg topic_ns)" />
+      <arg name="map_frame" value="$(arg map_frame)"/>
+    </include>
+    <node pkg="spot_navigation" name="spot_navigation" type="robot_to_block"/> 
+
+    <!-- <node pkg="spot_navigation" name="add_point" type="add_point" output="screen" /> -->
+
+  </group>
+  
+
+
+
+
+
+
+
+
+  <!-- ================================================ Real Robot ====================================================== -->
+  <group unless="$(arg sim)">  
+    <param name="use_sim_time" value="false" /> 
+
+    <!-- include file="$(find realsense2_camera)/launch/rs_camera.launch" / -->
+    <include file="$(find ouster_ros)/launch/sensor.launch">
+      <arg name="sensor_hostname" value="169.254.96.89" doc="hostname or IP in dotted decimal form of the sensor"/>
+      <arg name="udp_dest" value="169.254.117.241" doc="hostname or IP where the sensor will send data packets"/>
+    </include> 
+    <include file="$(find champ_navigation)/launch/slam/ouster_pointcloud_to_laser.launch">
+      <arg name="cloud_in"                  value="/ouster/points"/>
+    </include> 
+
+    <include file="$(find spot_navigation)/launch/include/fastlio_ouster64.launch">
+      <arg name="sim" value="$(arg sim)" />
+    </include>   
+    <include file="$(find spot_navigation)/launch/include/move_base.launch">
+      <arg name="dynamic_obj_removal" value="$(arg dynamic_obj_removal)" />    
+      <arg name="z_axis_min" value="$(arg z_axis_min)" />
+      <arg name="z_axis_max" value="$(arg z_axis_max)" />     
+    </include>     
+
+    <node pkg="spot_navigation" name="robot_to_block" type="robot_to_block">  
+    </node>  
+  </group>
+  
+  <node if="$(arg rviz)" name="rviz" pkg="rviz" type="rviz"
+      args="-d $(find spot_navigation)/rviz/navigate_fastlio_spot.rviz -f map"
+      output="screen"/>
+</launch>

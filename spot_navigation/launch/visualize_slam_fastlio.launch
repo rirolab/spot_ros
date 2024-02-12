@@ -1,0 +1,11 @@
+<launch>
+  <arg name="rviz"       default="true"/>
+
+  <!-- NLU Nav -->
+   <include file="$(find object_detector)/launch/nlu_nav.launch">
+    </include>   
+  
+  <node if="$(arg rviz)" name="rviz" pkg="rviz" type="rviz"
+      args="-d $(find spot_navigation)/rviz/navigate_fastlio.rviz -f map"
+      output="screen"/>
+</launch>

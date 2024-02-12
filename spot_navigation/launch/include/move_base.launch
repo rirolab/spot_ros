@@ -1,0 +1,91 @@
+<launch>
+    <arg name="frame_prefix" default=""/>
+    <arg name="topic_ns" default=""/>
+    <arg name="robot_name" default=""/>
+    <arg name="dynamic_obj_removal" default="false" />
+    <arg name="z_axis_min" default="0.0" />
+    <arg name="z_axis_max" default="1.0" />
+    
+    <arg name="base_frame" default="$(arg frame_prefix)base_link"/>
+    <arg name="map_frame" default="map"/>
+    
+    <!-- 
+    <node pkg="octomap_server" type="octomap_server_node" name="octomap_scan_server">
+        <param name="resolution" value="0.05" />
+        <param name="sensor_model_min" value="0.2" />        
+        <param name="frame_id" type="string" value="$(arg frame_prefix)map" />        
+        <param name="pointcloud_min_z" value="$(arg z_axis_min)" />
+        <param name="pointcloud_max_z" value="$(arg z_axis_max)" />  
+        <param name="latch" value="false" />
+        <param name="filter_speckles" value="true" />                            
+        <remap from="cloud_in" to="pcd_map" /> 
+    </node>
+    -->
+
+    <group if="$(arg dynamic_obj_removal)">
+
+      <!-- Octomap Server for dynamic obstacle removal -->
+      <node pkg="octomap_server" type="octomap_server_node" name="octomap_scan_server2">
+          <param name="two_map" value="true" />    
+          <param name="resolution" value="1" />
+          <param name="sensor_model_min" value="0.2" />        
+          <param name="frame_id" type="string" value="$(arg frame_prefix)map" />        
+          <param name="pointcloud_min_z" value="$(arg z_axis_min)" />
+          <param name="pointcloud_max_z" value="$(arg z_axis_max)" />        
+          <param name="latch" value="false" />
+          <param name="filter_speckles" value="true" />                            
+          <remap from="cloud_in" to="pcd_map" />
+      </node>
+
+      <node name="dynamic_object_filtering"
+          pkg="spot_navigation"
+          type="dynamic_object_filtering.py"
+          output="screen" >
+      </node>
+
+      <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+        <rosparam file="$(find spot_navigation)/config/move_base/costmap_common_params_dynamic.yaml" command="load" ns="global_costmap" />
+        <rosparam file="$(find spot_navigation)/config/move_base/costmap_common_params_dynamic.yaml" command="load" ns="local_costmap" />
+        <rosparam file="$(find spot_navigation)/config/move_base/local_costmap_params.yaml" command="load" />
+        <rosparam file="$(find spot_navigation)/config/move_base/global_costmap_params.yaml" command="load" />
+        <rosparam file="$(find spot_navigation)/config/move_base/base_local_planner_holonomic_params.yaml" command="load" />
+        <rosparam file="$(find spot_navigation)/config/move_base/move_base_params.yaml" command="load" />
+
+        <!-- explicitly define frame ids for movebase -->
+        <param name="global_costmap/global_frame"                   value="$(arg frame_prefix)map"/>
+        <param name="global_costmap/robot_base_frame"               value="$(arg base_frame)"/>
+        <param name="global_costmap/2d_obstacles_layer/scan/topic"  value="/$(arg topic_ns)scan"/>
+        <!--param name="global_costmap/3d_obstacles_layer/depth/topic" value="$(arg robot_name)camera/depth/points"/-->
+        <param name="local_costmap/global_frame"                    value="$(arg frame_prefix)map"/>
+        <param name="local_costmap/robot_base_frame"                value="$(arg base_frame)"/>
+        <param name="local_costmap/2d_obstacles_layer/scan/topic"   value="/$(arg topic_ns)scan"/>
+        <!--param name="local_costmap/3d_obstacles_layer/depth/topic"  value="$(arg robot_name)camera/depth/points"/-->
+      </node>
+    </group>
+    
+    <group unless="$(arg dynamic_obj_removal)">
+      <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+        <rosparam file="$(find spot_navigation)/config/move_base/costmap_common_params.yaml" command="load" ns="global_costmap" />
+        <rosparam file="$(find spot_navigation)/config/move_base/costmap_common_params.yaml" command="load" ns="local_costmap" />
+        <rosparam file="$(find spot_navigation)/config/move_base/local_costmap_params.yaml" command="load" />
+        <rosparam file="$(find spot_navigation)/config/move_base/global_costmap_params.yaml" command="load" />
+        <rosparam file="$(find spot_navigation)/config/move_base/teb_local_planner.yaml" command="load" />
+        <rosparam file="$(find spot_navigation)/config/move_base/move_base_params.yaml" command="load" />
+
+        <!-- redefine params -->
+        <!-- explicitly define frame ids for movebase -->
+        <param name="global_costmap/global_frame"                   value="$(arg frame_prefix)$(arg map_frame)"/> 
+        <param name="global_costmap/robot_base_frame"               value="$(arg base_frame)"/>
+        <param name="global_costmap/2d_obstacles_layer/scan/topic"  value="/$(arg topic_ns)scan_fuck"/>
+        <!--param name="global_costmap/3d_obstacles_layer/depth/topic" value="$(arg robot_name)camera/depth/points"/-->
+        <param name="local_costmap/global_frame"                    value="$(arg frame_prefix)$(arg map_frame)"/> 
+        <param name="local_costmap/robot_base_frame"                value="$(arg base_frame)"/>
+        <param name="local_costmap/2d_obstacles_layer/scan/topic"   value="/$(arg topic_ns)scan_you"/>
+        <!--param name="local_costmap/3d_obstacles_layer/depth/topic"  value="$(arg robot_name)camera/depth/points"/-->
+      </node>
+
+      <!-- added for periodic clear_costmaps -->
+      <!-- <node pkg="spot_navigation" type="clear_service_calling.py" respawn="false" name="clear_service_calling" output = "screen" args ="$(arg robot_name)" /> -->
+
+    </group>      
+</launch>

@@ -1,0 +1,59 @@
+<launch>
+    <arg name="robot_name"         default="/"/> <!-- Change this for namespacing. -->
+    <arg name="rviz"               default="false"/> <!-- Set to true to run rviz in parallel. -->
+    <arg name="lite"               default="false" />  <!-- Set to true if you're using CHAMP lite version. Only useful for microcontrollers. -->
+    <arg name="ros_control_file"   default="$(find spot_config)/config/ros_control/ros_control.yaml" /> <!-- Path to ROS Control configurations. Do not touch. -->
+    <arg name="gazebo_world"       default="$(find riro_bringup)/worlds/summit_xl_exproom_test.world" /> <!-- Path to Gazebo world you want to load. -->
+    <arg name="world_init_x"       default="0.0" /> <!-- X Initial position of the robot in Gazebo World -->
+    <arg name="world_init_y"       default="0.0" /> <!-- Y Initial position of the robot in Gazebo World -->
+    <arg name="world_init_z"       default="0.6" /> <!-- Y Initial position of the robot in Gazebo World -->
+    <arg name="world_init_heading" default="0.0" /> <!-- Initial heading of the robot in Gazebo World -->
+
+    <arg name="map_file"  default="$(find spot_navigation)/maps/2d_map_test/mymap.yaml"/>
+    <arg name="map_frame" default="map"/>
+    <arg name="map_topic" default="map"/>
+    <arg name="description_file"   default="$(find spot_description)/urdf/spot.urdf"/> <!-- Path to URDF file Do not touch this. -->
+
+
+    <arg if="$(eval arg('robot_name') == '/')"  name="frame_prefix" value="" />
+    <arg unless="$(eval arg('robot_name') == '/')" name="frame_prefix" value="$(arg robot_name)/" />
+
+    <include file="$(find spot_config)/launch/spawn_robot.launch">
+        <arg name="robot_name"             value="$(arg robot_name)"/>
+        <arg name="rviz"                 value="$(arg rviz)"/>
+        <arg name="lite"                   value="$(arg lite)"/>
+        <arg name="ros_control_file" value="$(arg ros_control_file)"/>
+        <arg name="gazebo_world" value="$(arg gazebo_world)"/>
+        <arg name="world_init_x"     value="$(arg world_init_x)"/>
+        <arg name="world_init_y"     value="$(arg world_init_y)"/>
+        <arg name="world_init_heading"     value="$(arg world_init_heading)"/>
+        <arg name="description_file"   value="$(arg description_file)"/> <!-- Path to URDF file Do not touch this. -->
+    </include>
+
+    <group ns="$(arg robot_name)">
+        <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)" >
+            <param name="frame_id" value="$(arg frame_prefix)map" />
+        </node>
+        <!-- Gazebo based localization -->
+        <node pkg="collab_demo" type="publish_ground_truth_odom_spot.py" name="localization" args="--robot spot --prefix spot/" output="screen"/>
+
+        <!-- Calls navigation stack -->
+        <include file="$(find spot_config)/launch/include/move_base.launch">
+            <arg name="frame_prefix" value="$(arg frame_prefix)"/>
+            <arg name="robot_name"   value="$(arg robot_name)"/>
+        </include>
+
+
+        <include file="$(find champ_navigation)/launch/slam/ouster_pointcloud_to_laser.launch">
+            <arg name="cloud_in" value="ouster/points"/>
+            <arg name="frame_prefix" value="$(arg robot_name)/" />
+        </include>
+
+        <!-- <include file="$(find spot_navigation)/launch/include/fastlio_ouster64.launch">
+        <arg name="robot_name" value="$(arg robot_name)" /> 
+        <arg name="frame_prefix" value="$(arg robot_name)/" />
+        </include> -->
+    </group>
+
+
+</launch>

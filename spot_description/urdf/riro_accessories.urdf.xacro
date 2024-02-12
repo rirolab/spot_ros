@@ -1,0 +1,152 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+    <xacro:macro name="accessories" params="base_name base_length base_height ouster_ns:=ouster" >
+        <material name="white"><color rgba="1 1 1 0.8" /></material>
+    
+        <xacro:property name="M_PI" value="3.14159265358979" />
+
+        <xacro:include filename="$(find realsense2_description)/urdf/_d455.urdf.xacro"/>
+        <xacro:sensor_d455 parent="${base_name}" name="camera">
+            <!-- <origin xyz ="${0.01+171.5e-03+31e-3} 0 ${base_height / 2+50e-3}" rpy="0 0 0"/> -->
+            <origin xyz ="0.425 0 ${base_height / 2+50e-3}" rpy="0 0 0"/>
+        </xacro:sensor_d455>
+        
+        <xacro:include filename="$(find ouster_description)/urdf/OS1-64.urdf.xacro"/>
+        <xacro:OS1-64 parent="${base_name}" name="os_sensor" hz="10" samples="220" topic_points="/${ouster_ns}/points" topic_imu="/${ouster_ns}/imu" min_range="0.05">
+            <origin xyz="${171.5e-03-24.24e-03} 0 ${base_height / 2+0.0345+75e-3}" rpy="0 0 0" />
+        </xacro:OS1-64>
+
+        <!-- Plate for box -->
+        <!-- width: 0.18m, height: 0.53m, depth: 0.015m -->
+        <link name="plate">
+            <visual>
+                <geometry>
+                    <box size="0.53 0.18 0.015"/>
+                </geometry>
+            </visual>
+            <collision>
+                <geometry>
+                    <box size="0.53 0.18 0.015"/>
+                </geometry>
+            </collision>
+            <inertial>
+                <mass value="1"/>
+                <inertia ixx="${(1/12) * 1 * (0.18 * 0.18 + 0.015 * 0.015)}" ixy="0.0" ixz="0.0"
+                            iyy="${(1/12) * 1 * (0.53 * 0.53 + 0.015 * 0.015)}" iyz="0.0"
+                            izz="${(1/12) * 1 * (0.53 * 0.53 + 0.18 * 0.18)}" />     
+            </inertial>
+        </link>
+        <joint name="plate_joint" type="fixed">
+            <origin xyz="-0.18 0 0.19" rpy="0 0 0" />
+            <parent link="${base_name}" /> 
+            <child link="plate" />
+        </joint>
+
+        <link name="plate_guide1">
+            <visual>
+                <geometry>
+                    <box size="0.53 0.01 0.01"/>
+                </geometry>
+            </visual>
+            <collision>
+                <geometry>
+                    <box size="0.53 0.01 0.05"/>
+                </geometry>
+            </collision>
+            <inertial>
+                <mass value="0.1"/>
+                <inertia ixx="${(1/12) * 0.1 * (0.01 * 0.01 + 0.01 * 0.01)}" ixy="0.0" ixz="0.0"
+                            iyy="${(1/12) * 0.1 * (0.53 * 0.53 + 0.01 * 0.01)}" iyz="0.0"
+                            izz="${(1/12) * 0.1 * (0.53 * 0.53 + 0.01 * 0.01)}" />     
+            </inertial>
+        </link>
+        <joint name="plate_guide1_joint" type="fixed">
+            <origin xyz="-0.18 0.085 0.2025" rpy="0 0 0" />
+            <parent link="${base_name}" /> 
+            <child link="plate_guide1" />
+        </joint>
+
+        <link name="plate_guide2">
+            <visual>
+                <geometry>
+                    <box size="0.53 0.01 0.01"/>
+                </geometry>
+            </visual>
+            <collision>
+                <geometry>
+                    <box size="0.53 0.01 0.05"/>
+                </geometry>
+            </collision>
+            <inertial>
+                <mass value="0.1"/>
+                <inertia ixx="${(1/12) * 0.1 * (0.01 * 0.01 + 0.01 * 0.01)}" ixy="0.0" ixz="0.0"
+                            iyy="${(1/12) * 0.1 * (0.53 * 0.53 + 0.01 * 0.01)}" iyz="0.0"
+                            izz="${(1/12) * 0.1 * (0.53 * 0.53 + 0.01 * 0.01)}" />     
+            </inertial>
+        </link>
+        <joint name="plate_guide2_joint" type="fixed">
+            <origin xyz="-0.18 -0.085 0.2025" rpy="0 0 0" />
+            <parent link="${base_name}" /> 
+            <child link="plate_guide2" />
+        </joint>
+
+        <link name="plate_guide3">
+            <visual>
+                <geometry>
+                    <box size="0.01 0.18 0.01"/>
+                </geometry>
+            </visual>
+            <collision>
+                <geometry>
+                    <box size="0.01 0.18 0.05"/>
+                </geometry>
+            </collision>
+            <inertial>
+                <mass value="0.1"/>
+                <inertia ixx="${(1/12) * 0.1 * (0.18 * 0.18 + 0.01 * 0.01)}" ixy="0.0" ixz="0.0"
+                            iyy="${(1/12) * 0.1 * (0.01 * 0.01 + 0.01 * 0.01)}" iyz="0.0"
+                            izz="${(1/12) * 0.1 * (0.01 * 0.01 + 0.18 * 0.18)}" />     
+            </inertial>
+        </link>
+        <joint name="plate_guide3_joint" type="fixed">
+            <origin xyz="-0.44 0.0 0.2025" rpy="0 0 0" />
+            <parent link="${base_name}" /> 
+            <child link="plate_guide3" />
+        </joint>
+
+        <link name="plate_guide4">
+            <visual>
+                <geometry>
+                    <box size="0.01 0.18 0.01"/>
+                </geometry>
+            </visual>
+            <collision>
+                <geometry>
+                    <box size="0.01 0.18 0.05"/>
+                </geometry>
+            </collision>
+            <inertial>
+                <mass value="0.1"/>
+                <inertia ixx="${(1/12) * 0.1 * (0.18 * 0.18 + 0.01 * 0.01)}" ixy="0.0" ixz="0.0"
+                            iyy="${(1/12) * 0.1 * (0.01 * 0.01 + 0.01 * 0.01)}" iyz="0.0"
+                            izz="${(1/12) * 0.1 * (0.01 * 0.01 + 0.18 * 0.18)}" />     
+            </inertial>
+        </link>
+        <joint name="plate_guide4_joint" type="fixed">
+            <origin xyz="0.08 0.0 0.2025" rpy="0 0 0" />
+            <parent link="${base_name}" /> 
+            <child link="plate_guide4" />
+        </joint>
+
+        <gazebo reference="plate">
+            <kp>1000000.0</kp>
+            <kd>1.0</kd>
+            <mu1>100000.0</mu1>
+            <mu2>100000.0</mu2>
+        </gazebo>
+
+    </xacro:macro>
+    
+    
+
+</robot>
