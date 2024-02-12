@@ -20,6 +20,7 @@
         <node pkg="riro_bringup" name="spot_locater" type="spot_locater.py" output="screen" required="false"
             args="$(arg spot_world_init_x) $(arg spot_world_init_y) $(arg spot_world_init_z) $(arg spot_world_init_a)">
         </node>
+        <node name="publish_ground_truth_odom" pkg="collab_demo" type="publish_ground_truth_odom_spot.py" output="screen" />
         <node name="map_server" pkg="map_server" type="map_server" args="$(arg spot_map_file)">
             <param name="frame_id" value="$(arg spot_robot_name)/$(arg spot_map_frame)"/>  
             <remap from="map" to="$(arg spot_map_topic)"/>
